@@ -65,7 +65,7 @@ def get_ideas(entity: Optional[str] = None) -> List[Tuple]:
     results = []
     
     try:
-        conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+        conn = psycopg2.connect(st.secrets['DB'], sslmode='require')
         cursor = conn.cursor()
 
         if entity:
