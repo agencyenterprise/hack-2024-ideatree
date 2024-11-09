@@ -159,7 +159,7 @@ with tab1:
 
 ### **Tab 2: Embedding Visualization**
 with tab2:
-    st.header("Hierarchical Clustering and Cluster Labeling")
+    st.header("Hierarchical model of ideas")
 
     # Retrieve the list of entities
     all_ideas = get_ideas()
