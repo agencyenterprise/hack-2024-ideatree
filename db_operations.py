@@ -60,40 +60,37 @@ def get_embedding_for_idea(idea_text: str) -> List[float]:
 
 @st.cache_data
 def get_ideas(entity: Optional[str] = None) -> List[Tuple]:
-    """
-    Retrieves ideas from the 'ideas' table. If 'entity' is specified, filters ideas by entity.
-    """
+    conn = None
+    cursor = None
+    results = []
+    
     try:
-        conn = get_connection()
+        conn = psycopg2.connect(DATABASE_URL, sslmode='require')
         cursor = conn.cursor()
 
         if entity:
             cursor.execute('SELECT * FROM ideas WHERE entity = %s', (entity,))
         else:
             cursor.execute('SELECT * FROM ideas')
+        
         rows = cursor.fetchall()
 
-        results = []
+        # Convert JSON strings back to lists for embeddings
         for row in rows:
             idea_id, entity, source_title, source_url, source_text, idea_text, embedding_json = row
-            try:
-                embedding = json.loads(embedding_json) if embedding_json else None
-                if isinstance(embedding, list):
-                    pass  # Embedding is correctly parsed
-                else:
-                    st.error(f"Idea ID {idea_id} embedding is not a list.")
-                    embedding = None
-            except json.JSONDecodeError:
-                st.error(f"Error decoding embedding for Idea ID {idea_id}")
-                embedding = None
+            embedding = json.loads(embedding_json) if embedding_json else None
             results.append((idea_id, entity, source_title, source_url, source_text, idea_text, embedding))
-
-        return results
-    except psycopg2.Error as e:
-        st.error(f"Error retrieving ideas: {e}")
-        return []
+    
+    except Exception as e:
+        st.error(f"Database error: {e}")
+    
     finally:
-        cursor.close()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+    
+    return results
 
 def delete_idea_by_id(idea_id: int):
     """
