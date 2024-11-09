@@ -70,7 +70,7 @@ def clean_output(output):
 # Initialize API Key securely
 API_KEY = st.secrets['API_KEY']
 
-st.title('Multi-Source Idea Extractor')
+st.title('IdeaTree')
 
 # Add tabs, inserting "Natural Language Hierarchies" between "Embedding Visualization" and "Interact with a Tree"
 tab1, tab2, tab_new, tab3, tab4 = st.tabs(["Idea Extraction", "Embedding Visualization", "Natural Language Hierarchies", "Interact with a Tree", "Have Two Trees Interact"])
