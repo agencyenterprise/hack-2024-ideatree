@@ -58,7 +58,7 @@ def get_embedding_for_idea(idea_text: str) -> List[float]:
         st.error(f"Error generating embedding: {e}")
         return []
 
-@st.cache_data
+@st.cache_data(ttl=120)
 def get_ideas(entity: Optional[str] = None) -> List[Tuple]:
     conn = None
     cursor = None
@@ -149,7 +149,7 @@ def save_cluster_hierarchy(entity: str, hierarchy: dict, markdown_text: str):
     finally:
         cursor.close()
 
-@st.cache_data
+@st.cache_data(ttl=120)
 def load_cluster_hierarchy(entity: str) -> Tuple[Optional[dict], Optional[str]]:
     """
     Loads the cluster hierarchy and its corresponding markdown text for a given entity.
@@ -196,7 +196,7 @@ def get_embedding_for_query(query: str) -> List[float]:
     # Reuse the embedding function for ideas
     return get_embedding_for_idea(query)
 
-@st.cache_data
+@st.cache_data(ttl=120)
 def find_closest_ideas(entity: str, query_embedding: List[float], top_n: int = 5) -> List[Tuple]:
     """
     Finds the top N closest ideas to the user's query based on cosine similarity.
