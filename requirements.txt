@@ -1,0 +1,10 @@
+streamlit
+langchain==0.1.7
+langchain-community==0.0.20
+nltk
+openai
+numpy
+scikit-learn
+plotly
+streamlit-agraph
+psycopg2
