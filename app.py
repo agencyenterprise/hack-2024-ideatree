@@ -159,7 +159,7 @@ with tab1:
 
 ### **Tab 2: Embedding Visualization**
 with tab2:
-    st.header("Hierarchical model of ideas")
+    st.header("Mathematically modeling the IdeaTree")
 
     # Retrieve the list of entities
     all_ideas = get_ideas()
