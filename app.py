@@ -24,6 +24,7 @@ from streamlit_agraph import agraph, Node, Edge, Config
 from collections import defaultdict
 import numpy as np
 
+nltk.download('punkt_tab')
 nltk.download('punkt')
 
 # Initialize session state variables
