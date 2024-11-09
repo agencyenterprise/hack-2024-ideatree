@@ -1,6 +1,8 @@
 # # app.py
 
 import streamlit as st
+st.set_page_config(layout="wide")
+
 from langchain_community.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
