@@ -59,37 +59,48 @@ def get_embedding_for_idea(idea_text: str) -> List[float]:
         return []
 
 @st.cache_data(ttl=120)
-def get_ideas(entity: Optional[str] = None) -> List[Tuple]:
+def get_ideas(entity: Optional[str] = None, with_embeddings: bool = False) -> List[Tuple]:
+    """
+    Efficiently retrieves ideas from the database. Can filter by entity and optionally include embeddings.
+    """
     conn = None
     cursor = None
     results = []
-    
+
     try:
         conn = psycopg2.connect(st.secrets['DB'], sslmode='require')
         cursor = conn.cursor()
 
+        # Construct dynamic SELECT clause
+        fields = "id, entity, source_title, source_url, source_text, idea_text"
+        if with_embeddings:
+            fields += ", embedding"
+
         if entity:
-            cursor.execute('SELECT * FROM ideas WHERE entity = %s', (entity,))
+            cursor.execute(f"SELECT {fields} FROM ideas WHERE entity = %s", (entity,))
         else:
-            cursor.execute('SELECT * FROM ideas')
-        
+            cursor.execute(f"SELECT {fields} FROM ideas LIMIT 200")  # Safety limit
+
         rows = cursor.fetchall()
 
-        # Convert JSON strings back to lists for embeddings
         for row in rows:
-            idea_id, entity, source_title, source_url, source_text, idea_text, embedding_json = row
-            embedding = json.loads(embedding_json) if embedding_json else None
-            results.append((idea_id, entity, source_title, source_url, source_text, idea_text, embedding))
-    
+            if with_embeddings:
+                # Reconstruct embedding from JSON string
+                *main_fields, embedding_json = row
+                embedding = json.loads(embedding_json) if embedding_json else None
+                results.append((*main_fields, embedding))
+            else:
+                results.append(row)
+
     except Exception as e:
-        st.error(f"Database error: {e}")
-    
+        st.error(f"Database error in get_ideas: {e}")
+
     finally:
         if cursor:
             cursor.close()
         if conn:
             conn.close()
-    
+
     return results
 
 def delete_idea_by_id(idea_id: int):
@@ -199,38 +210,28 @@ def get_embedding_for_query(query: str) -> List[float]:
 @st.cache_data(ttl=120)
 def find_closest_ideas(entity: str, query_embedding: List[float], top_n: int = 5) -> List[Tuple]:
     """
-    Finds the top N closest ideas to the user's query based on cosine similarity.
+    Finds the top N ideas closest to the query embedding, for a specific entity only.
     """
-    ideas = get_ideas(entity=entity)
+    ideas = get_ideas(entity=entity, with_embeddings=True)
     if not ideas:
-        st.info(f"No ideas found for entity '{entity}'.")
         return []
 
-    # Convert query embedding to numpy array
     query_vec = np.array(query_embedding)
-
-    # Prepare a list to hold (idea_row, similarity) tuples
     similarities = []
 
     for idea in ideas:
-        idea_embedding = idea[6]  # Assuming embedding is in the 7th column and already a list
+        idea_embedding = idea[6]
         if not idea_embedding:
-            continue  # Skip if no embedding available
+            continue
         idea_vec = np.array(idea_embedding)
-        # Compute cosine similarity
         try:
             cosine_sim = np.dot(query_vec, idea_vec) / (np.linalg.norm(query_vec) * np.linalg.norm(idea_vec))
             similarities.append((idea, cosine_sim))
         except ZeroDivisionError:
-            continue  # Skip if either vector has zero magnitude
+            continue
 
     if not similarities:
-        st.info("No similar ideas found.")
         return []
 
-    # Sort based on similarity
     similarities.sort(key=lambda x: x[1], reverse=True)
-
-    # Return top_n ideas
-    top_ideas = [item[0] for item in similarities[:top_n]]
-    return top_ideas
+    return [item[0] for item in similarities[:top_n]]
